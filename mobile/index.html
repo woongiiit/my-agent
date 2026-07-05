@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>My Agent</title>
+  <link rel="manifest" href="/static/manifest.json" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div>
+        <h1>My Agent</h1>
+        <p id="status" class="status">연결 안 됨</p>
+      </div>
+      <button id="settingsBtn" class="icon-btn" aria-label="설정">⚙</button>
+    </header>
+
+    <main id="messages" class="messages" aria-live="polite"></main>
+
+    <div id="typing" class="typing hidden">에이전트가 응답 중...</div>
+
+    <footer class="composer">
+      <button id="voiceBtn" class="icon-btn" aria-label="음성 입력">🎤</button>
+      <textarea
+        id="input"
+        rows="1"
+        placeholder="명령을 입력하세요 (예: 메이플 켜줘)"
+        autocomplete="off"
+      ></textarea>
+      <button id="sendBtn" class="send-btn">전송</button>
+    </footer>
+  </div>
+
+  <dialog id="settingsDialog">
+    <form method="dialog" id="settingsForm">
+      <h2>서버 설정</h2>
+      <p id="tailscaleHint" class="hint hidden"></p>
+      <div class="tailscale-actions">
+        <button type="button" id="fetchTailscaleBtn" class="secondary-btn">
+          Tailscale URL 가져오기
+        </button>
+        <button type="button" id="useTailscaleBtn" class="secondary-btn hidden">
+          Tailscale 주소 사용
+        </button>
+      </div>
+      <label>
+        서버 주소
+        <input id="serverUrl" type="url" placeholder="https://your-app.up.railway.app" required />
+      </label>
+      <label>
+        사용자 ID
+        <input id="userId" type="text" placeholder="AGENT_USER_ID" autocomplete="username" />
+      </label>
+      <label>
+        비밀번호
+        <input id="userPassword" type="password" placeholder="AGENT_PASSWORD" autocomplete="current-password" />
+      </label>
+      <label>
+        세션 ID (비우면 자동 생성)
+        <input id="sessionId" type="text" placeholder="optional" />
+      </label>
+      <div class="dialog-actions">
+        <button type="button" id="cancelSettings">취소</button>
+        <button type="submit" value="save">저장 및 연결</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/static/app.js" type="module"></script>
+</body>
+</html>

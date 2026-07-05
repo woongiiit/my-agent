@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.env.local
+playwright-report/
+test-results/
+tailscale_status.json
+uploads/
+assets/
+*.log
