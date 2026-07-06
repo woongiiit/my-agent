@@ -33,12 +33,20 @@ function loadConfig() {
   }
 }
 
+function defaultServerUrl() {
+  return window.location.origin;
+}
+
+function effectiveServerUrl() {
+  return (config.serverUrl || defaultServerUrl()).replace(/\/$/, "");
+}
+
 function saveConfig() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
 }
 
 function wsUrl() {
-  const base = (config.serverUrl || "").replace(/\/$/, "");
+  const base = effectiveServerUrl();
   const url = new URL(base);
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.pathname = "/ws/chat";
@@ -61,7 +69,7 @@ function addBubble(role, text) {
 }
 
 async function login() {
-  const base = config.serverUrl.replace(/\/$/, "");
+  const base = effectiveServerUrl();
   const res = await fetch(`${base}/api/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -83,8 +91,8 @@ async function login() {
 }
 
 function connect() {
-  if (!config.serverUrl || !config.apiToken) {
-    setStatus("서버 설정 및 로그인이 필요합니다");
+  if (!config.apiToken) {
+    setStatus("로그인이 필요합니다");
     els.settingsDialog.showModal();
     return;
   }
@@ -170,7 +178,7 @@ async function sendMessage() {
 
 async function sendViaHttp(text) {
   try {
-    const res = await fetch(`${config.serverUrl.replace(/\/$/, "")}/api/chat`, {
+    const res = await fetch(`${effectiveServerUrl()}/api/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -233,13 +241,16 @@ els.input.addEventListener("keydown", (e) => {
 });
 
 els.settingsBtn.addEventListener("click", () => {
-  els.serverUrl.value = config.serverUrl || window.location.origin;
+  els.serverUrl.value = config.serverUrl || defaultServerUrl();
   els.userId.value = config.userId || "";
   els.userPassword.value = "";
   els.sessionId.value = config.sessionId || "";
   pendingTailscaleUrl = null;
   els.useTailscaleBtn.classList.add("hidden");
   els.tailscaleHint.classList.add("hidden");
+  // Railway/HTTPS 접속 시 서버 주소는 현재 URL 자동 사용
+  const onDeployed = window.location.protocol.startsWith("http");
+  els.serverUrl.closest("label").style.display = onDeployed ? "none" : "";
   els.settingsDialog.showModal();
 });
 
@@ -289,7 +300,7 @@ els.cancelSettings.addEventListener("click", () => {
 
 els.settingsForm.addEventListener("submit", async (e) => {
   e.preventDefault();
-  config.serverUrl = els.serverUrl.value.trim();
+  config.serverUrl = els.serverUrl.value.trim() || defaultServerUrl();
   config.userId = els.userId.value.trim();
   config.userPassword = els.userPassword.value;
   config.sessionId = els.sessionId.value.trim();
@@ -308,8 +319,9 @@ els.settingsForm.addEventListener("submit", async (e) => {
 
 setupVoice();
 
-if (config.serverUrl && config.apiToken) {
+if (config.apiToken) {
   connect();
 } else {
+  els.serverUrl.value = config.serverUrl || defaultServerUrl();
   els.settingsDialog.showModal();
 }
