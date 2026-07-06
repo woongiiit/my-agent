@@ -24,16 +24,19 @@
 
     <div id="typing" class="typing hidden">에이전트가 응답 중...</div>
 
-    <footer class="composer">
-      <button id="voiceBtn" class="icon-btn" aria-label="음성 입력">🎤</button>
-      <textarea
-        id="input"
-        rows="1"
-        placeholder="명령을 입력하세요 (예: 메이플 켜줘)"
-        autocomplete="off"
-      ></textarea>
-      <button id="sendBtn" class="send-btn">전송</button>
-    </footer>
+    <div class="composer-area">
+      <div id="presets" class="presets" aria-label="빠른 명령"></div>
+      <footer class="composer">
+        <button id="voiceBtn" class="icon-btn" aria-label="음성 입력">🎤</button>
+        <textarea
+          id="input"
+          rows="1"
+          placeholder="명령을 입력하세요"
+          autocomplete="off"
+        ></textarea>
+        <button id="sendBtn" class="send-btn">전송</button>
+      </footer>
+    </div>
   </div>
 
   <dialog id="settingsDialog">

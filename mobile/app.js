@@ -1,5 +1,13 @@
 const STORAGE_KEY = "my_agent_chat_config";
 
+const PRESETS = [
+  { label: "출근", message: "출근 처리해줘" },
+  { label: "퇴근", message: "퇴근 처리해줘" },
+  { label: "출근 상태", message: "오늘 출근했는지 확인해줘" },
+  { label: "메이플 실행", message: "메이플 켜줘" },
+  { label: "한화오션", message: "한화오션 현재 주가와 수익률 알려줘" },
+];
+
 const els = {
   messages: document.getElementById("messages"),
   input: document.getElementById("input"),
@@ -7,6 +15,7 @@ const els = {
   voiceBtn: document.getElementById("voiceBtn"),
   status: document.getElementById("status"),
   typing: document.getElementById("typing"),
+  presets: document.getElementById("presets"),
   settingsBtn: document.getElementById("settingsBtn"),
   settingsDialog: document.getElementById("settingsDialog"),
   settingsForm: document.getElementById("settingsForm"),
@@ -24,6 +33,7 @@ let ws = null;
 let config = loadConfig();
 let reconnectTimer = null;
 let pendingTailscaleUrl = null;
+let isSending = false;
 
 function loadConfig() {
   try {
@@ -127,6 +137,10 @@ function connect() {
 
     if (data.type === "typing") {
       els.typing.classList.toggle("hidden", !data.status);
+      if (!data.status) {
+        isSending = false;
+        setPresetsEnabled(true);
+      }
       return;
     }
 
@@ -141,6 +155,8 @@ function connect() {
 
     if (data.type === "error") {
       addBubble("system", data.message);
+      isSending = false;
+      setPresetsEnabled(true);
     }
   };
 
@@ -155,25 +171,42 @@ function connect() {
   };
 }
 
-async function sendMessage() {
-  const text = els.input.value.trim();
-  if (!text) return;
+function setPresetsEnabled(enabled) {
+  els.presets.querySelectorAll(".preset-btn").forEach((btn) => {
+    btn.disabled = !enabled;
+  });
+  els.sendBtn.disabled = !enabled;
+}
+
+async function sendMessage(forcedText) {
+  const text = (forcedText ?? els.input.value).trim();
+  if (!text || isSending) return;
+
+  isSending = true;
+  setPresetsEnabled(false);
 
   addBubble("user", text);
-  els.input.value = "";
+  if (!forcedText) els.input.value = "";
 
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
-    await sendViaHttp(text);
-    return;
+  try {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      await sendViaHttp(text);
+      return;
+    }
+
+    ws.send(
+      JSON.stringify({
+        message: text,
+        session_id: config.sessionId || undefined,
+        user_id: config.userId || "mobile_user",
+      })
+    );
+  } finally {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      isSending = false;
+      setPresetsEnabled(true);
+    }
   }
-
-  ws.send(
-    JSON.stringify({
-      message: text,
-      session_id: config.sessionId || undefined,
-      user_id: config.userId || "mobile_user",
-    })
-  );
 }
 
 async function sendViaHttp(text) {
@@ -198,7 +231,21 @@ async function sendViaHttp(text) {
     addBubble("assistant", data.reply);
   } catch (err) {
     addBubble("system", `전송 실패: ${err.message}`);
+  } finally {
+    isSending = false;
+    setPresetsEnabled(true);
   }
+}
+
+function setupPresets() {
+  PRESETS.forEach(({ label, message }) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "preset-btn";
+    btn.textContent = label;
+    btn.addEventListener("click", () => sendMessage(message));
+    els.presets.appendChild(btn);
+  });
 }
 
 function setupVoice() {
@@ -318,6 +365,7 @@ els.settingsForm.addEventListener("submit", async (e) => {
 });
 
 setupVoice();
+setupPresets();
 
 if (config.apiToken) {
   connect();

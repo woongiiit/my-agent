@@ -9,6 +9,7 @@ from metabuild_attendance_agent.tools.attendance import (
 )
 from root_agent.llm_config import create_llm
 from root_agent.tools.apps import launch_app, launch_maple
+from root_agent.tools.stock import get_hanwha_ocean_profit
 
 root_agent = Agent(
     model=create_llm(),
@@ -21,6 +22,7 @@ root_agent = Agent(
 사용 가능한 작업:
 - 출근/퇴근: clock_in, clock_out, get_attendance_status
 - 게임 실행: launch_maple 또는 launch_app (메이플, maple 등)
+- 주식: get_hanwha_ocean_profit (한화오션 현재가 및 평균단가 대비 수익률)
 
 규칙:
 - 요청 의도를 파악해 가장 적합한 도구 하나를 선택하세요.
@@ -33,5 +35,6 @@ root_agent = Agent(
         get_attendance_status,
         launch_maple,
         launch_app,
+        get_hanwha_ocean_profit,
     ],
 )

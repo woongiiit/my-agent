@@ -99,13 +99,51 @@ body {
   display: none;
 }
 
+.composer-area {
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.presets {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.presets::-webkit-scrollbar {
+  display: none;
+}
+
+.preset-btn {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.preset-btn:active {
+  background: #334155;
+}
+
+.preset-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .composer {
   display: flex;
   gap: 8px;
   align-items: flex-end;
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--border);
-  background: var(--panel);
+  padding: 10px 16px 12px;
 }
 
 #input {
