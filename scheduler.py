@@ -10,6 +10,7 @@ ADK 에이전트 없이 도구를 직접 호출합니다.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import sys
@@ -37,13 +38,13 @@ def _parse_time(env_key: str, default: str) -> tuple[str, str]:
 
 def job_clock_in() -> None:
     logger.info("출근 작업 시작")
-    result = clock_in()
+    result = asyncio.run(clock_in())
     logger.info("출근 결과: %s", result)
 
 
 def job_clock_out() -> None:
     logger.info("퇴근 작업 시작")
-    result = clock_out()
+    result = asyncio.run(clock_out())
     logger.info("퇴근 결과: %s", result)
 
 

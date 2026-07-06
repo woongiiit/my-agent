@@ -7,6 +7,7 @@
     python run_attendance.py status
 """
 
+import asyncio
 import sys
 
 from metabuild_attendance_agent.tools.attendance import (
@@ -28,7 +29,7 @@ def main() -> None:
         sys.exit(1)
 
     cmd = sys.argv[1]
-    result = COMMANDS[cmd]()
+    result = asyncio.run(COMMANDS[cmd]())
     print(result)
 
 
