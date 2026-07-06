@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 from dataclasses import dataclass
@@ -11,6 +12,8 @@ from dotenv import load_dotenv
 from playwright.async_api import Page, async_playwright
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 GW_BASE_URL = os.getenv("GW_BASE_URL", "https://gw.metabuild.co.kr")
 GW_USER_ID = os.getenv("GW_USER_ID", "")
@@ -40,28 +43,30 @@ def _validate_credentials() -> None:
 
 
 async def _login(page: Page) -> None:
-    await page.goto(GW_BASE_URL, wait_until="networkidle", timeout=60_000)
+    """다우오피스(나온) 로그인 — 폼은 login.js가 #login_loginBox에 동적 렌더."""
+    await page.goto(GW_BASE_URL, wait_until="domcontentloaded", timeout=60_000)
 
-    await page.wait_for_url("**/login/**", timeout=30_000)
+    # #login_body는 <body> id — Playwright visible 판정에 걸려 타임아웃남. 입력란만 대기.
+    id_input = page.locator("#login_loginBox #userId, #userId")
+    await id_input.first.wait_for(state="visible", timeout=45_000)
+    pw_input = page.locator("#login_loginBox #password, #password").first
 
-    id_input = page.locator(
-        'input[name="userId"], input[name="id"], input[id="userId"], '
-        'input[type="text"]:visible'
-    ).first
-    pw_input = page.locator(
-        'input[name="password"], input[name="passwd"], input[type="password"]'
-    ).first
-
-    await id_input.wait_for(state="visible", timeout=15_000)
-    await id_input.fill(GW_USER_ID)
+    await id_input.first.fill(GW_USER_ID)
     await pw_input.fill(GW_PASSWORD)
 
-    login_btn = page.get_by_role("button", name="Login").or_(
-        page.get_by_text("Login", exact=False)
-    )
-    await login_btn.first.click()
+    # loginRsaUseYn=Y — RSA 암호화는 login.js submit 핸들러가 처리
+    await page.locator("#btnLogin").click()
 
-    await page.wait_for_load_state("networkidle", timeout=60_000)
+    try:
+        await page.wait_for_url("**/homGwMain**", timeout=60_000)
+    except Exception as exc:
+        if await page.locator("#btnLogin").is_visible():
+            raise RuntimeError(
+                "로그인 실패: 아이디/비밀번호 또는 그룹웨어 접근을 확인하세요."
+            ) from exc
+        raise
+
+    await page.wait_for_load_state("domcontentloaded")
     await page.wait_for_timeout(2_000)
 
 
@@ -169,6 +174,7 @@ async def run_attendance(action: AttendanceAction) -> dict:
                 "already_done": result.already_done,
             }
         except Exception as exc:
+            logger.exception("출퇴근 처리 실패 (action=%s)", action.value)
             return {
                 "success": False,
                 "action": action.value,
@@ -194,12 +200,17 @@ async def get_attendance_status() -> dict:
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=HEADLESS)
-        page = await browser.new_page()
+        context = await browser.new_context(
+            viewport={"width": 1280, "height": 900},
+            locale="ko-KR",
+        )
+        page = await context.new_page()
         try:
             await _login(page)
             status = await _read_status(page)
             return {"success": True, **status}
         except Exception as exc:
+            logger.exception("출근 상태 조회 실패")
             return {"success": False, "message": str(exc)}
         finally:
             await browser.close()
